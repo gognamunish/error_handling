@@ -1,14 +1,14 @@
-package com.kxt.credit.summary.platform.exception.core;
+package com.cfbl.platform.core.exception.core;
 
 import org.springframework.http.HttpStatus;
 
+/**
+ * Canonical error codes used by the API error envelope.
+ */
 public enum ErrorCode {
-    UPSTREAM_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Upstream service unavailable"),
-    UPSTREAM_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout"),
-    UPSTREAM_BAD_GATEWAY(HttpStatus.BAD_GATEWAY, "Upstream gateway failure"),
-    DATA_MAPPING_ERROR(HttpStatus.UNPROCESSABLE_ENTITY, "Data mapping failure"),
-    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation error"),
-    CONFIG_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Integration configuration error"),
+    DATA_COLLECTION_LAYER_EXCEPTION(HttpStatus.BAD_GATEWAY, "Data collection layer exception"),
+    BUSINESS_LAYER_EXCEPTION(HttpStatus.BAD_REQUEST, "Business layer exception"),
+    PRESENTATION_LAYER_EXCEPTION(HttpStatus.BAD_REQUEST, "Presentation layer exception"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred"),
     NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method not allowed");

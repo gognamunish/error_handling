@@ -4,6 +4,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Externalized configuration for platform services and integration settings.
+ */
 @ConfigurationProperties(prefix = "kxt.platform")
 public class PlatformProperties {
 
@@ -26,6 +29,9 @@ public class PlatformProperties {
         this.services = services;
     }
 
+    /**
+     * Service-level endpoint and protocol metadata.
+     */
     public static class ServiceDefinition {
 
         private String endpointUrl;

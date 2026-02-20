@@ -1,4 +1,4 @@
-package com.kxt.credit.summary.platform.exception.core;
+package com.cfbl.platform.core.exception.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,12 +9,9 @@ class ErrorCodeTest {
 
     @ParameterizedTest
     @CsvSource({
-        "UPSTREAM_UNAVAILABLE,503",
-        "UPSTREAM_TIMEOUT,504",
-        "UPSTREAM_BAD_GATEWAY,502",
-        "DATA_MAPPING_ERROR,422",
-        "VALIDATION_ERROR,400",
-        "CONFIG_ERROR,500",
+        "DATA_COLLECTION_LAYER_EXCEPTION,502",
+        "BUSINESS_LAYER_EXCEPTION,400",
+        "PRESENTATION_LAYER_EXCEPTION,400",
         "INTERNAL_ERROR,500",
         "NOT_FOUND,404",
         "METHOD_NOT_ALLOWED,405"
