@@ -20,6 +20,13 @@ This package provides reactive retry policy execution using Resilience4j.
 - Avoid custom retry loops in service/adapters.
 - Surface retry outcomes in both success and error API responses.
 
+## Why Resilience4j (Not Spring Retry)
+
+- This codebase uses reactive `WebClient` + Reactor `Mono`; Resilience4j provides native Reactor operators.
+- Retry policies are service-driven from `PlatformProperties.ServiceDefinition.retrySettings`.
+- Runtime retry metadata (`RetryInfo`) is attached to API success/error envelopes.
+- Spring Retry is stronger in imperative `@Retryable` method interception; for these reactive pipelines, Resilience4j keeps the flow cleaner and more explicit.
+
 ## Important Design Decision
 
 Retry key is **service-level** (`serviceId`), not per operation/request.
@@ -60,4 +67,3 @@ kxt:
 - Keep retry predicate strict (retry only transient failures).
 - Do not use dynamic retry keys (avoid request IDs, dynamic paths, user IDs).
 - Tune `maxAttempts` and `waitDurationMs` per service, not globally for all integrations.
-
