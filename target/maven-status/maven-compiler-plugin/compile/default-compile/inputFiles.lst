@@ -1,0 +1,11 @@
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/ErrorHandlingApplication.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/config/PlatformProperties.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/api/ErrorResponse.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/api/ErrorResponseFactory.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/api/GlobalExceptionHandler.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/api/UpstreamStatusMapper.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/core/DataSourceContext.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/core/ErrorCode.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/core/PlatformException.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/exception/core/UpstreamInfo.java
+/Users/taoyogi/dev/codex/error_handling/src/main/java/com/kxt/credit/summary/platform/sample/ExampleWebClientService.java

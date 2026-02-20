@@ -1,0 +1,25 @@
+{
+  "groups": [
+    {
+      "name": "kxt.platform",
+      "type": "com.kxt.credit.summary.platform.config.PlatformProperties",
+      "sourceType": "com.kxt.credit.summary.platform.config.PlatformProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "kxt.platform.expose-endpoint-in-errors",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.kxt.credit.summary.platform.config.PlatformProperties"
+    },
+    {
+      "name": "kxt.platform.services",
+      "type": "java.util.Map<java.lang.String,com.kxt.credit.summary.platform.config.PlatformProperties$ServiceDefinition>",
+      "sourceType": "com.kxt.credit.summary.platform.config.PlatformProperties"
+    }
+  ],
+  "hints": [],
+  "ignored": {
+    "properties": []
+  }
+}
