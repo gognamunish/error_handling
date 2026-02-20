@@ -1,4 +1,4 @@
-package com.kxt.credit.summary.platform.sample;
+package com.cfbl.platform.core.sample;
 
 import java.util.Objects;
 import org.springframework.web.reactive.function.client.WebClient;

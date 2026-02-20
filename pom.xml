@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.kxt.credit.summary</groupId>
+    <groupId>com.cfbl.platform.core</groupId>
     <artifactId>error-handling</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>error-handling</name>

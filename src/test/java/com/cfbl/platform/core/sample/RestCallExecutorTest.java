@@ -1,4 +1,4 @@
-package com.kxt.credit.summary.platform.sample;
+package com.cfbl.platform.core.sample;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

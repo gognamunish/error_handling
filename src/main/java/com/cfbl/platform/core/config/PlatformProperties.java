@@ -1,4 +1,4 @@
-package com.kxt.credit.summary.platform.config;
+package com.cfbl.platform.core.config;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

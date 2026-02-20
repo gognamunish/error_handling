@@ -1,4 +1,4 @@
-package com.kxt.credit.summary.platform.sample;
+package com.cfbl.platform.core.sample;
 
 import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
