@@ -1,5 +1,6 @@
 package com.cfbl.platform.core.exception.core;
 
+import com.cfbl.platform.core.retry.RetryInfo;
 import java.util.Objects;
 
 /**
@@ -13,6 +14,7 @@ public class CreditSummaryPlatformException extends RuntimeException {
     private final ErrorCode code;
     private final DataProviderContext source;
     private final UpstreamInfo upstream;
+    private RetryInfo retryInfo;
 
     public CreditSummaryPlatformException(
             String module,
@@ -26,6 +28,7 @@ public class CreditSummaryPlatformException extends RuntimeException {
         this.code = Objects.requireNonNull(code, "code");
         this.source = source;
         this.upstream = upstream;
+        this.retryInfo = null;
     }
 
     public CreditSummaryPlatformException(
@@ -59,5 +62,13 @@ public class CreditSummaryPlatformException extends RuntimeException {
 
     public UpstreamInfo getUpstream() {
         return upstream;
+    }
+
+    public RetryInfo getRetryInfo() {
+        return retryInfo;
+    }
+
+    public void attachRetryInfo(RetryInfo retryInfo) {
+        this.retryInfo = retryInfo;
     }
 }

@@ -5,15 +5,31 @@ kxt:
       sample-api:
         endpoint-url: https://example.com
         openapi-version: "3.1"
+        retry-settings:
+          enabled: true
+          max-attempts: 3
+          wait-duration-ms: 200
       credit-bureau:
         endpoint-url: https://api.creditbureau.com/v2
         openapi-version: "3.1"
+        retry-settings:
+          enabled: true
+          max-attempts: 4
+          wait-duration-ms: 300
       bureau-soap:
         wsdl-url: https://soap.creditbureau.com/service?wsdl
         wsdl-version: "1.1"
         soap-action: urn:getCreditScore
         port-name: CreditScorePort
+        retry-settings:
+          enabled: true
+          max-attempts: 2
+          wait-duration-ms: 500
       core-db:
         jdbc-url: jdbc:oracle:thin:@//core-db.internal:1521/CREDIT
         schema: CREDIT
         catalog: CORE_DB
+        retry-settings:
+          enabled: false
+          max-attempts: 1
+          wait-duration-ms: 0

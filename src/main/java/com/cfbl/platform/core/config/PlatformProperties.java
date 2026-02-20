@@ -1,5 +1,6 @@
 package com.cfbl.platform.core.config;
 
+import com.cfbl.platform.core.retry.RetrySettings;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -43,6 +44,7 @@ public class PlatformProperties {
         private String portName;
         private String schema;
         private String catalog;
+        private RetrySettings retrySettings = RetrySettings.defaults();
 
         public String getEndpointUrl() {
             return endpointUrl;
@@ -114,6 +116,14 @@ public class PlatformProperties {
 
         public void setCatalog(String catalog) {
             this.catalog = catalog;
+        }
+
+        public RetrySettings getRetrySettings() {
+            return retrySettings;
+        }
+
+        public void setRetrySettings(RetrySettings retrySettings) {
+            this.retrySettings = retrySettings;
         }
     }
 }

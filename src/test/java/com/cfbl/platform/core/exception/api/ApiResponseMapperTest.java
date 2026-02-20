@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
 import com.cfbl.platform.core.exception.core.ErrorCode;
+import com.cfbl.platform.core.retry.RetryInfo;
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class ApiResponseMapperTest {
             null,
             null
         );
+        ex.attachRetryInfo(new RetryInfo(2, 3, true, false));
 
         ApiResponse<Void> response = mapper.fromPlatformException(ex);
 
@@ -39,5 +41,7 @@ class ApiResponseMapperTest {
         assertThat(response.error()).isNotNull();
         assertThat(response.error().code()).isEqualTo("DATA_COLLECTION_LAYER_EXCEPTION");
         assertThat(response.error().module()).isEqualTo("CREDIT_SUMMARY_PLATFORM");
+        assertThat(response.retry()).isNotNull();
+        assertThat(response.retry().attempted()).isEqualTo(2);
     }
 }

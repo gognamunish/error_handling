@@ -2,6 +2,7 @@ package com.cfbl.platform.core.exception.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
+import com.cfbl.platform.core.retry.RetryInfo;
 import java.time.Instant;
 import java.util.List;
 import org.slf4j.MDC;
@@ -17,6 +18,7 @@ public record ApiResponse<T>(
     int status,
     T data,
     DataProviderContext metadata,
+    RetryInfo retry,
     Error error
 ) {
 
@@ -24,19 +26,27 @@ public record ApiResponse<T>(
      * Builds a successful API response with payload and metadata.
      */
     public static <T> ApiResponse<T> success(T data, DataProviderContext metadata) {
-        return success(data, HttpStatus.OK.value(), metadata);
+        return success(data, HttpStatus.OK.value(), metadata, null);
     }
 
     /**
      * Builds a successful API response with payload, metadata and explicit status.
      */
     public static <T> ApiResponse<T> success(T data, int status, DataProviderContext metadata) {
+        return success(data, status, metadata, null);
+    }
+
+    /**
+     * Builds a successful API response with payload, metadata, status and retry details.
+     */
+    public static <T> ApiResponse<T> success(T data, int status, DataProviderContext metadata, RetryInfo retry) {
         return new ApiResponse<>(
             Instant.now(),
             resolveTraceId(),
             status,
             data,
             metadata,
+            retry,
             null
         );
     }
@@ -48,6 +58,7 @@ public record ApiResponse<T>(
         String reason,
         String message,
         DataProviderContext metadata,
+        RetryInfo retry,
         Upstream upstream,
         List<ValidationError> validationErrors
     ) {
@@ -57,6 +68,7 @@ public record ApiResponse<T>(
             status.value(),
             null,
             metadata,
+            retry,
             new Error(code, module, reason, message, upstream, validationErrors)
         );
     }

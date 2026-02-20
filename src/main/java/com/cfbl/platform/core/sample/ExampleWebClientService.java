@@ -1,11 +1,11 @@
 package com.cfbl.platform.core.sample;
 
+import com.cfbl.platform.core.config.PlatformProperties;
 import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryBusinessException;
 import com.cfbl.platform.core.exception.core.ErrorCode;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 /**
@@ -21,13 +21,16 @@ public class ExampleWebClientService {
     private final RestCallExecutor restCallExecutor;
     private final WebClientHolder sampleApi;
 
-    public ExampleWebClientService(WebClient webClient) {
-        this.restCallExecutor = new RestCallExecutor();
-        this.sampleApi = new WebClientHolder(
-            SERVICE_ID,
-            SAMPLE_API_ENDPOINT,
-            webClient.mutate().baseUrl(SAMPLE_API_ENDPOINT).build()
-        );
+    public ExampleWebClientService(
+        RestCallExecutor restCallExecutor,
+        WebClientHolderFactory holderFactory,
+        PlatformProperties platformProperties
+    ) {
+        this.restCallExecutor = restCallExecutor;
+        String fallbackEndpoint = platformProperties.getServices().containsKey(SERVICE_ID)
+            ? null
+            : SAMPLE_API_ENDPOINT;
+        this.sampleApi = holderFactory.create(SERVICE_ID, fallbackEndpoint);
     }
 
     /**

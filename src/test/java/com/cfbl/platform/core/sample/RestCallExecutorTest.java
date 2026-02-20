@@ -6,6 +6,9 @@ import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.ErrorCode;
+import com.cfbl.platform.core.retry.RetryPolicyExecutor;
+import com.cfbl.platform.core.retry.RetrySettings;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -18,7 +21,10 @@ import reactor.test.StepVerifier;
 
 class RestCallExecutorTest {
 
-    private final RestCallExecutor executor = new RestCallExecutor();
+    private final RestCallExecutor executor = new RestCallExecutor(new RetryPolicyExecutor());
+    private final RestCallExecutor retryingExecutor = new RestCallExecutor(
+        new RetryPolicyExecutor(new RetrySettings(true, 3, 1))
+    );
 
     @Test
     void shouldReturnSuccessApiResponseOn200() {
@@ -49,6 +55,10 @@ class RestCallExecutorTest {
                 assertThat(response.metadata().serviceId()).isEqualTo("sample-api");
                 assertThat(response.metadata().resolvedEndpoint()).isEqualTo("https://example.com/sample");
                 assertThat(response.metadata().protocolMeta().get("operation")).isEqualTo("fetchSample");
+                assertThat(response.retry()).isNotNull();
+                assertThat(response.retry().attempted()).isEqualTo(1);
+                assertThat(response.retry().retried()).isFalse();
+                assertThat(response.retry().exhausted()).isFalse();
             })
             .verifyComplete();
     }
@@ -78,6 +88,8 @@ class RestCallExecutorTest {
             .assertNext(response -> {
                 assertThat(response.status()).isEqualTo(201);
                 assertThat(response.data()).isEqualTo("created-response");
+                assertThat(response.retry()).isNotNull();
+                assertThat(response.retry().attempted()).isEqualTo(1);
             })
             .verifyComplete();
     }
@@ -105,6 +117,7 @@ class RestCallExecutorTest {
                 assertThat(response.status()).isEqualTo(204);
                 assertThat(response.data()).isNull();
                 assertThat(response.metadata()).isNotNull();
+                assertThat(response.retry()).isNotNull();
             })
             .verifyComplete();
     }
@@ -140,6 +153,9 @@ class RestCallExecutorTest {
                 assertThat(cse.getUpstream().httpStatus()).isEqualTo(503);
                 assertThat(cse.getSource()).isNotNull();
                 assertThat(cse.getSource().resolvedEndpoint()).isEqualTo("https://example.com/sample");
+                assertThat(cse.getRetryInfo()).isNotNull();
+                assertThat(cse.getRetryInfo().attempted()).isEqualTo(3);
+                assertThat(cse.getRetryInfo().exhausted()).isTrue();
             })
             .verify();
     }
@@ -166,6 +182,9 @@ class RestCallExecutorTest {
                 assertThat(cse.getCode()).isEqualTo(ErrorCode.DATA_COLLECTION_LAYER_EXCEPTION);
                 assertThat(cse.getMessage()).isEqualTo("POST failed");
                 assertThat(cse.getCause()).isInstanceOf(TimeoutException.class);
+                assertThat(cse.getRetryInfo()).isNotNull();
+                assertThat(cse.getRetryInfo().attempted()).isEqualTo(3);
+                assertThat(cse.getRetryInfo().exhausted()).isTrue();
             })
             .verify();
     }
@@ -193,6 +212,48 @@ class RestCallExecutorTest {
         StepVerifier.create(result)
             .expectErrorSatisfies(ex -> assertThat(ex).isSameAs(original))
             .verify();
+    }
+
+    @Test
+    void shouldRetryAndSucceedOnThirdAttempt() {
+        AtomicInteger attempts = new AtomicInteger();
+        WebClient client = WebClient.builder()
+            .baseUrl("https://example.com")
+            .exchangeFunction(request -> {
+                int attempt = attempts.incrementAndGet();
+                if (attempt < 3) {
+                    return Mono.just(ClientResponse.create(HttpStatus.SERVICE_UNAVAILABLE).build());
+                }
+                return Mono.just(
+                    ClientResponse.create(HttpStatus.OK)
+                        .header("Content-Type", MediaType.TEXT_PLAIN_VALUE)
+                        .body("ok-after-retry")
+                        .build()
+                );
+            })
+            .build();
+
+        WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
+
+        Mono<ApiResponse<String>> result = retryingExecutor.execute(
+            holder,
+            HttpMethod.GET,
+            "retryThenSuccess",
+            "/sample",
+            c -> c.get().uri("/sample"),
+            String.class,
+            "GET failed"
+        );
+
+        StepVerifier.create(result)
+            .assertNext(response -> {
+                assertThat(response.data()).isEqualTo("ok-after-retry");
+                assertThat(response.retry()).isNotNull();
+                assertThat(response.retry().attempted()).isEqualTo(3);
+                assertThat(response.retry().retried()).isTrue();
+                assertThat(response.retry().exhausted()).isFalse();
+            })
+            .verifyComplete();
     }
 
     private WebClient clientReturning(ClientResponse response) {

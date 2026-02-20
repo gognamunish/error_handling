@@ -25,6 +25,7 @@ public class ApiResponseMapper {
             status.getReasonPhrase(),
             ex.getMessage(),
             ex.getSource(),
+            ex.getRetryInfo(),
             toUpstream(ex.getUpstream()),
             List.of()
         );
@@ -41,6 +42,7 @@ public class ApiResponseMapper {
             CreditSummaryPlatformException.MODULE_PLATFORM,
             status.getReasonPhrase(),
             message == null || message.isBlank() ? code.defaultMessage() : message,
+            null,
             null,
             null,
             List.of()
