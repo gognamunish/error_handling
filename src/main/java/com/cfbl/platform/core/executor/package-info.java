@@ -9,8 +9,8 @@
  *   <li>attach provider metadata ({@code DataProviderContext}) and retry metadata ({@code RetryInfo})</li>
  * </ul>
  *
- * <p>Use {@code RestCallExecutor} for WebClient-based HTTP calls and {@code SoapCallExecutor}
+ * <p>Use {@code RestCallExecutor} for retry-enabled WebClient flows, {@code SimpleRestExecutor}
+ * for lightweight WebClient calls without retry overhead, and {@code SoapCallExecutor}
  * for supplier-driven SOAP port invocations.
  */
 package com.cfbl.platform.core.executor;
-
