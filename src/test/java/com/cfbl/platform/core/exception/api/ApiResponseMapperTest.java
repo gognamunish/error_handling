@@ -26,7 +26,7 @@ class ApiResponseMapperTest {
         );
 
         CreditSummaryPlatformException ex = new CreditSummaryPlatformException(
-            ErrorCode.DATA_COLLECTION_LAYER_EXCEPTION,
+            ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
             "Upstream failed",
             source,
             null,
@@ -37,10 +37,10 @@ class ApiResponseMapperTest {
         ApiResponse<Void> response = mapper.fromPlatformException(ex);
 
         assertThat(response.metadata()).isNotNull();
-        assertThat(response.metadata().resolvedEndpoint()).isEqualTo("https://api.creditbureau.com/v2/score");
+        assertThat(response.metadata().endpoint()).isEqualTo("https://api.creditbureau.com/v2/score");
         assertThat(response.error()).isNotNull();
-        assertThat(response.error().code()).isEqualTo("DATA_COLLECTION_LAYER_EXCEPTION");
-        assertThat(response.error().module()).isEqualTo("CREDIT_SUMMARY_PLATFORM");
+        assertThat(response.error().code()).isEqualTo("LAYER_DATA_COLLECTION_FAILURE");
+        assertThat(response.error().layer()).isEqualTo("PLATFORM");
         assertThat(response.retry()).isNotNull();
         assertThat(response.retry().attempted()).isEqualTo(2);
     }

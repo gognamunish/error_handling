@@ -2,6 +2,7 @@ package com.cfbl.platform.core.exception.api;
 
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.ErrorCode;
+import com.cfbl.platform.core.exception.core.LayerType;
 import com.cfbl.platform.core.exception.core.UpstreamInfo;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -21,10 +22,10 @@ public class ApiResponseMapper {
         return ApiResponse.error(
             status,
             ex.getCode().name(),
-            ex.getModule(),
+            ex.getLayer().name(),
             status.getReasonPhrase(),
             ex.getMessage(),
-            ex.getSource(),
+            ex.getProviderContext(),
             ex.getRetryInfo(),
             toUpstream(ex.getUpstream()),
             List.of()
@@ -39,7 +40,7 @@ public class ApiResponseMapper {
         return ApiResponse.error(
             status,
             code.name(),
-            CreditSummaryPlatformException.MODULE_PLATFORM,
+            LayerType.PLATFORM.name(),
             status.getReasonPhrase(),
             message == null || message.isBlank() ? code.defaultMessage() : message,
             null,

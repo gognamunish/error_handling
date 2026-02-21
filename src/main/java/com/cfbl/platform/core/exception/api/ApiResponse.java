@@ -54,7 +54,7 @@ public record ApiResponse<T>(
     public static ApiResponse<Void> error(
         HttpStatus status,
         String code,
-        String module,
+        String layer,
         String reason,
         String message,
         DataProviderContext metadata,
@@ -69,7 +69,7 @@ public record ApiResponse<T>(
             null,
             metadata,
             retry,
-            new Error(code, module, reason, message, upstream, validationErrors)
+            new Error(code, layer, reason, message, upstream, validationErrors)
         );
     }
 
@@ -84,8 +84,8 @@ public record ApiResponse<T>(
      */
     public record Error(
         String code,
-        String module,
-        String type,
+        String layer,
+        String reason,
         String message,
         Upstream upstream,
         List<ValidationError> validationErrors

@@ -5,19 +5,19 @@ package com.cfbl.platform.core.exception.core;
  */
 public class CreditSummaryDataCollectionException extends CreditSummaryPlatformException {
 
-    public static final String MODULE = "DATA_COLLECTION";
+    public static final LayerType LAYER = LayerType.DATA_COLLECTION;
 
     public CreditSummaryDataCollectionException(
         ErrorCode code,
         String message,
-        DataProviderContext source,
+        DataProviderContext providerContext,
         UpstreamInfo upstream,
         Throwable cause
     ) {
-        super(MODULE, code, message, source, upstream, cause);
+        super(LAYER, code, message, providerContext, upstream, cause);
     }
 
     public CreditSummaryDataCollectionException(ErrorCode code, String message) {
-        super(MODULE, code, message, null, null, null);
+        super(LAYER, code, message, null, null, null);
     }
 }

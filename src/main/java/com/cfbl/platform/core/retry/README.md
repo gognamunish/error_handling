@@ -29,7 +29,7 @@ This package provides reactive retry policy execution using Resilience4j.
 
 ## Important Design Decision
 
-Retry key is **service-level** (`serviceId`), not per operation/request.
+Retry key is **service-level with protocol namespace** (`rest:<serviceId>`, `soap:<serviceId>`), not per operation/request.
 
 Reason:
 - stable key cardinality in `RetryRegistry`
@@ -38,10 +38,11 @@ Reason:
 
 ## How It Is Used
 
-`RestCallExecutor` calls:
+`RestCallExecutor` and `SoapCallExecutor` call:
 
 1. `RetryPolicyExecutor.execute(...)` with:
-   - `retryName = serviceId`
+   - `retryName = rest:<serviceId>` for REST
+   - `retryName = soap:<serviceId>` for SOAP
    - `RetrySettings` from `WebClientHolder` / `PlatformProperties`
    - supplier that performs one outbound call
    - predicate that marks retryable exceptions

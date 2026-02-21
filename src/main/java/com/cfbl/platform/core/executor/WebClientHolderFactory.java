@@ -1,4 +1,4 @@
-package com.cfbl.platform.core.sample;
+package com.cfbl.platform.core.executor;
 
 import com.cfbl.platform.core.config.PlatformProperties;
 import com.cfbl.platform.core.config.PlatformProperties.ServiceDefinition;
@@ -9,6 +9,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Builds {@link WebClientHolder} instances from {@link PlatformProperties} service definitions.
+ *
+ * <p>This is the single place where REST endpoint and retry policy are resolved from
+ * configuration for outbound WebClient integrations.
  */
 @Component
 public class WebClientHolderFactory {

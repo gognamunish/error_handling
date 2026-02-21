@@ -9,12 +9,11 @@ import java.util.Map;
 public record DataProviderContext(
     Protocol protocol,
     String serviceId,
-    String resolvedEndpoint,
-    Map<String, String> protocolMeta,
+    String endpoint,
+    Map<String, String> protocolAttributes,
     long responseTimeMs,
     Instant collectedAt
 ) {
-
     /**
      * Supported integration protocols for provider interactions.
      */

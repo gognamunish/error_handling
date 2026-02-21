@@ -8,25 +8,25 @@ import java.util.Objects;
  */
 public class CreditSummaryPlatformException extends RuntimeException {
 
-    public static final String MODULE_PLATFORM = "CREDIT_SUMMARY_PLATFORM";
+    public static final LayerType LAYER_PLATFORM = LayerType.PLATFORM;
 
-    private final String module;
+    private final LayerType layer;
     private final ErrorCode code;
-    private final DataProviderContext source;
+    private final DataProviderContext providerContext;
     private final UpstreamInfo upstream;
     private RetryInfo retryInfo;
 
     public CreditSummaryPlatformException(
-            String module,
+            LayerType layer,
             ErrorCode code,
             String message,
-            DataProviderContext source,
+            DataProviderContext providerContext,
             UpstreamInfo upstream,
             Throwable cause) {
         super(message == null || message.isBlank() ? code.defaultMessage() : message, cause);
-        this.module = Objects.requireNonNull(module, "module");
+        this.layer = Objects.requireNonNull(layer, "layer");
         this.code = Objects.requireNonNull(code, "code");
-        this.source = source;
+        this.providerContext = providerContext;
         this.upstream = upstream;
         this.retryInfo = null;
     }
@@ -34,30 +34,30 @@ public class CreditSummaryPlatformException extends RuntimeException {
     public CreditSummaryPlatformException(
             ErrorCode code,
             String message,
-            DataProviderContext source,
+            DataProviderContext providerContext,
             UpstreamInfo upstream,
             Throwable cause) {
-        this(MODULE_PLATFORM, code, message, source, upstream, cause);
+        this(LAYER_PLATFORM, code, message, providerContext, upstream, cause);
     }
 
     public CreditSummaryPlatformException(ErrorCode code, String message) {
-        this(MODULE_PLATFORM, code, message, null, null, null);
+        this(LAYER_PLATFORM, code, message, null, null, null);
     }
 
     public CreditSummaryPlatformException(ErrorCode code, String message, Throwable cause) {
-        this(MODULE_PLATFORM, code, message, null, null, cause);
+        this(LAYER_PLATFORM, code, message, null, null, cause);
     }
 
-    public String getModule() {
-        return module;
+    public LayerType getLayer() {
+        return layer;
     }
 
     public ErrorCode getCode() {
         return code;
     }
 
-    public DataProviderContext getSource() {
-        return source;
+    public DataProviderContext getProviderContext() {
+        return providerContext;
     }
 
     public UpstreamInfo getUpstream() {

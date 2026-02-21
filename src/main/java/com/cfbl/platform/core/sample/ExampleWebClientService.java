@@ -1,6 +1,9 @@
 package com.cfbl.platform.core.sample;
 
 import com.cfbl.platform.core.config.PlatformProperties;
+import com.cfbl.platform.core.executor.RestCallExecutor;
+import com.cfbl.platform.core.executor.WebClientHolder;
+import com.cfbl.platform.core.executor.WebClientHolderFactory;
 import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryBusinessException;
 import com.cfbl.platform.core.exception.core.ErrorCode;
@@ -54,7 +57,7 @@ public class ExampleWebClientService {
     public Mono<ApiResponse<String>> createSampleWithContext(String customerId) {
         if (isBlank(customerId)) {
             return Mono.error(new CreditSummaryBusinessException(
-                ErrorCode.BUSINESS_LAYER_EXCEPTION,
+                ErrorCode.LAYER_BUSINESS_FAILURE,
                 "customerId is required"
             ));
         }

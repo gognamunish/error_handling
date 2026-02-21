@@ -16,7 +16,7 @@ class ApiGlobalExceptionHandlerTest {
     @Test
     void shouldReturnMappedPlatformError() {
         CreditSummaryPlatformException ex = new CreditSummaryPlatformException(
-            ErrorCode.DATA_COLLECTION_LAYER_EXCEPTION,
+            ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
             "upstream failed"
         );
 
@@ -24,8 +24,8 @@ class ApiGlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().error().code()).isEqualTo("DATA_COLLECTION_LAYER_EXCEPTION");
-        assertThat(response.getBody().error().module()).isEqualTo("CREDIT_SUMMARY_PLATFORM");
+        assertThat(response.getBody().error().code()).isEqualTo("LAYER_DATA_COLLECTION_FAILURE");
+        assertThat(response.getBody().error().layer()).isEqualTo("PLATFORM");
     }
 
     @Test
@@ -37,7 +37,7 @@ class ApiGlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().error().code()).isEqualTo("METHOD_NOT_ALLOWED");
-        assertThat(response.getBody().error().module()).isEqualTo("CREDIT_SUMMARY_PLATFORM");
+        assertThat(response.getBody().error().layer()).isEqualTo("PLATFORM");
     }
 
     @Test
@@ -47,6 +47,6 @@ class ApiGlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().error().code()).isEqualTo("INTERNAL_ERROR");
-        assertThat(response.getBody().error().module()).isEqualTo("CREDIT_SUMMARY_PLATFORM");
+        assertThat(response.getBody().error().layer()).isEqualTo("PLATFORM");
     }
 }

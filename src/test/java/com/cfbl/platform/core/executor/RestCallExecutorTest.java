@@ -1,4 +1,4 @@
-package com.cfbl.platform.core.sample;
+package com.cfbl.platform.core.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,8 +53,8 @@ class RestCallExecutorTest {
                 assertThat(response.data()).isEqualTo("ok-response");
                 assertThat(response.metadata()).isNotNull();
                 assertThat(response.metadata().serviceId()).isEqualTo("sample-api");
-                assertThat(response.metadata().resolvedEndpoint()).isEqualTo("https://example.com/sample");
-                assertThat(response.metadata().protocolMeta().get("operation")).isEqualTo("fetchSample");
+                assertThat(response.metadata().endpoint()).isEqualTo("https://example.com/sample");
+                assertThat(response.metadata().protocolAttributes().get("operation")).isEqualTo("fetchSample");
                 assertThat(response.retry()).isNotNull();
                 assertThat(response.retry().attempted()).isEqualTo(1);
                 assertThat(response.retry().retried()).isFalse();
@@ -147,15 +147,55 @@ class RestCallExecutorTest {
             .expectErrorSatisfies(ex -> {
                 assertThat(ex).isInstanceOf(CreditSummaryDataCollectionException.class);
                 CreditSummaryDataCollectionException cse = (CreditSummaryDataCollectionException) ex;
-                assertThat(cse.getCode()).isEqualTo(ErrorCode.DATA_COLLECTION_LAYER_EXCEPTION);
+                assertThat(cse.getCode()).isEqualTo(ErrorCode.LAYER_DATA_COLLECTION_FAILURE);
                 assertThat(cse.getMessage()).contains("HTTP 503");
                 assertThat(cse.getUpstream()).isNotNull();
                 assertThat(cse.getUpstream().httpStatus()).isEqualTo(503);
-                assertThat(cse.getSource()).isNotNull();
-                assertThat(cse.getSource().resolvedEndpoint()).isEqualTo("https://example.com/sample");
+                assertThat(cse.getProviderContext()).isNotNull();
+                assertThat(cse.getProviderContext().endpoint()).isEqualTo("https://example.com/sample");
                 assertThat(cse.getRetryInfo()).isNotNull();
                 assertThat(cse.getRetryInfo().attempted()).isEqualTo(3);
                 assertThat(cse.getRetryInfo().exhausted()).isTrue();
+            })
+            .verify();
+    }
+
+    @Test
+    void shouldNotRetryForNotFoundStatus() {
+        WebClient client = clientReturning(
+            ClientResponse.create(HttpStatus.NOT_FOUND)
+                .header("Content-Type", MediaType.TEXT_PLAIN_VALUE)
+                .body("not found")
+                .build()
+        );
+
+        WebClientHolder holder = new WebClientHolder(
+            "sample-api",
+            "https://example.com",
+            client,
+            new RetrySettings(true, 3, 1)
+        );
+
+        Mono<ApiResponse<String>> result = retryingExecutor.execute(
+            holder,
+            HttpMethod.GET,
+            "fetchMissing",
+            "/sample",
+            c -> c.get().uri("/sample"),
+            String.class,
+            "GET failed"
+        );
+
+        StepVerifier.create(result)
+            .expectErrorSatisfies(ex -> {
+                assertThat(ex).isInstanceOf(CreditSummaryDataCollectionException.class);
+                CreditSummaryDataCollectionException cse = (CreditSummaryDataCollectionException) ex;
+                assertThat(cse.getUpstream()).isNotNull();
+                assertThat(cse.getUpstream().httpStatus()).isEqualTo(404);
+                assertThat(cse.getRetryInfo()).isNotNull();
+                assertThat(cse.getRetryInfo().attempted()).isEqualTo(1);
+                assertThat(cse.getRetryInfo().retried()).isFalse();
+                assertThat(cse.getRetryInfo().exhausted()).isFalse();
             })
             .verify();
     }
@@ -179,7 +219,7 @@ class RestCallExecutorTest {
             .expectErrorSatisfies(ex -> {
                 assertThat(ex).isInstanceOf(CreditSummaryDataCollectionException.class);
                 CreditSummaryDataCollectionException cse = (CreditSummaryDataCollectionException) ex;
-                assertThat(cse.getCode()).isEqualTo(ErrorCode.DATA_COLLECTION_LAYER_EXCEPTION);
+                assertThat(cse.getCode()).isEqualTo(ErrorCode.LAYER_DATA_COLLECTION_FAILURE);
                 assertThat(cse.getMessage()).isEqualTo("POST failed");
                 assertThat(cse.getCause()).isInstanceOf(TimeoutException.class);
                 assertThat(cse.getRetryInfo()).isNotNull();
@@ -192,7 +232,7 @@ class RestCallExecutorTest {
     @Test
     void shouldPassThroughExistingPlatformException() {
         CreditSummaryPlatformException original = new CreditSummaryDataCollectionException(
-            ErrorCode.DATA_COLLECTION_LAYER_EXCEPTION,
+            ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
             "already mapped"
         );
 
@@ -254,6 +294,43 @@ class RestCallExecutorTest {
                 assertThat(response.retry().exhausted()).isFalse();
             })
             .verifyComplete();
+    }
+
+    @Test
+    void shouldRetryUsingCallerProvidedPredicate() {
+        AtomicInteger attempts = new AtomicInteger();
+        WebClient client = clientFailing(new IllegalStateException("custom transient"));
+        WebClientHolder holder = new WebClientHolder(
+            "sample-api",
+            "https://example.com",
+            client,
+            new RetrySettings(true, 3, 1)
+        );
+
+        Mono<ApiResponse<String>> result = retryingExecutor.execute(
+            holder,
+            HttpMethod.GET,
+            "customRetry",
+            "/sample",
+            c -> {
+                attempts.incrementAndGet();
+                return c.get().uri("/sample");
+            },
+            String.class,
+            "GET failed",
+            ex -> ex instanceof IllegalStateException
+        );
+
+        StepVerifier.create(result)
+            .expectErrorSatisfies(ex -> {
+                assertThat(ex).isInstanceOf(CreditSummaryDataCollectionException.class);
+                CreditSummaryDataCollectionException cse = (CreditSummaryDataCollectionException) ex;
+                assertThat(cse.getRetryInfo()).isNotNull();
+                assertThat(cse.getRetryInfo().attempted()).isEqualTo(3);
+                assertThat(cse.getRetryInfo().retried()).isTrue();
+                assertThat(cse.getRetryInfo().exhausted()).isTrue();
+            })
+            .verify();
     }
 
     private WebClient clientReturning(ClientResponse response) {

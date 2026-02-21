@@ -1,11 +1,14 @@
-package com.cfbl.platform.core.sample;
+package com.cfbl.platform.core.executor;
 
 import com.cfbl.platform.core.retry.RetrySettings;
 import java.util.Objects;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Holder for a preconfigured WebClient and its provider identity metadata.
+ * Immutable holder for a preconfigured REST client and provider metadata.
+ *
+ * <p>Used by {@link RestCallExecutor} so execution logic stays independent from how the client
+ * was created.
  */
 public record WebClientHolder(
     String serviceId,
