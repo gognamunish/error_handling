@@ -46,7 +46,6 @@ public class LayeredSampleService {
                 "fetchSample",
                 SAMPLE_PATH,
                 () -> holder.webClient().get().uri(SAMPLE_PATH),
-                String.class,
                 "Sample API GET failed",
                 throwable -> false);
     }
@@ -67,7 +66,6 @@ public class LayeredSampleService {
                 "createSample",
                 SAMPLE_PATH,
                 () -> holder.webClient().post().uri(SAMPLE_PATH).bodyValue(new CreateSampleRequest(customerId)),
-                String.class,
                 "Sample API POST failed",
                 throwable -> false);
     }

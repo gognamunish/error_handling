@@ -43,7 +43,6 @@ class RestCallExecutorTest {
             "fetchSample",
             "/sample",
             () -> holder.webClient().get().uri("/sample"),
-            String.class,
             "GET failed"
         );
 
@@ -80,7 +79,6 @@ class RestCallExecutorTest {
             "createSample",
             "/sample",
             () -> holder.webClient().post().uri("/sample").bodyValue("{}"),
-            String.class,
             "POST failed"
         );
 
@@ -108,7 +106,6 @@ class RestCallExecutorTest {
             "fetchNoContent",
             "/sample",
             () -> holder.webClient().get().uri("/sample"),
-            String.class,
             "GET failed"
         );
 
@@ -139,7 +136,6 @@ class RestCallExecutorTest {
             "fetchSample",
             "/sample",
             () -> holder.webClient().get().uri("/sample"),
-            String.class,
             "GET failed"
         );
 
@@ -182,7 +178,6 @@ class RestCallExecutorTest {
             "fetchMissing",
             "/sample",
             () -> holder.webClient().get().uri("/sample"),
-            String.class,
             "GET failed"
         );
 
@@ -211,7 +206,6 @@ class RestCallExecutorTest {
             "createSample",
             "/sample",
             () -> holder.webClient().post().uri("/sample").bodyValue("{}"),
-            String.class,
             "POST failed"
         );
 
@@ -245,7 +239,6 @@ class RestCallExecutorTest {
             "fetchSample",
             "/sample",
             () -> holder.webClient().get().uri("/sample"),
-            String.class,
             "GET failed"
         );
 
@@ -281,7 +274,6 @@ class RestCallExecutorTest {
             "retryThenSuccess",
             "/sample",
             () -> holder.webClient().get().uri("/sample"),
-            String.class,
             "GET failed"
         );
 
@@ -316,7 +308,6 @@ class RestCallExecutorTest {
                 attempts.incrementAndGet();
                 return holder.webClient().get().uri("/sample");
             },
-            String.class,
             "GET failed",
             ex -> ex instanceof IllegalStateException
         );

@@ -8,7 +8,6 @@ import com.cfbl.platform.core.exception.core.UpstreamInfo;
 import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryPolicyExecutor;
 import com.cfbl.platform.core.retry.RetrySettings;
-import java.lang.reflect.Type;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -16,7 +15,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -37,13 +35,12 @@ public class RestCallExecutor extends ExecutorBase {
     /**
      * Executes a provider call and returns integration-layer result (no API envelope coupling).
      */
-    public <T> Mono<ProviderResult<T>> executeProvider(
+    public Mono<ProviderResult<String>> executeProvider(
             WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
             String path,
             Supplier<RequestHeadersSpec<?>> requestFactory,
-            Type responseType,
             String failureMessage) {
         return executeProvider(
                 holder,
@@ -51,7 +48,6 @@ public class RestCallExecutor extends ExecutorBase {
                 operation,
                 path,
                 requestFactory,
-                responseType,
                 failureMessage,
                 throwable -> false);
     }
@@ -59,20 +55,15 @@ public class RestCallExecutor extends ExecutorBase {
     /**
      * Executes a provider call and returns integration-layer result (no API envelope coupling).
      */
-    public <T> Mono<ProviderResult<T>> executeProvider(
+    public Mono<ProviderResult<String>> executeProvider(
             WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
             String path,
             Supplier<RequestHeadersSpec<?>> requestFactory,
-            Type responseType,
             String failureMessage,
             Predicate<Throwable> callerRetryablePredicate) {
         return Mono.defer(() -> {
-            @SuppressWarnings("unchecked")
-            ParameterizedTypeReference<T> bodyType = (ParameterizedTypeReference<T>) ParameterizedTypeReference
-                    .forType(responseType);
-
             Instant collectedAt = Instant.now();
             Instant start = collectedAt;
 
@@ -90,29 +81,28 @@ public class RestCallExecutor extends ExecutorBase {
             return executeWithRetry(
                     "rest:" + holder.serviceId(),
                     retrySettings,
-                    () -> executeAttempt(requestFactory, bodyType, baseContext, start),
+                    () -> executeAttempt(requestFactory, baseContext, start),
                     effectiveRetryable,
                     ex -> toPlatformException(ex, failureMessage, baseContext, start));
         });
     }
 
-    private <T> Mono<ProviderResult<T>> executeAttempt(
+    private Mono<ProviderResult<String>> executeAttempt(
             Supplier<RequestHeadersSpec<?>> requestFactory,
-            ParameterizedTypeReference<T> bodyType,
             DataProviderContext baseContext,
             Instant start) {
         return requestFactory.get()
                 .exchangeToMono(response -> mapResponse(
                         response.statusCode(),
-                        response.bodyToMono(bodyType),
+                        response.bodyToMono(String.class),
                         baseContext,
                         start))
                 .timeout(Duration.ofSeconds(3));
     }
 
-    private <T> Mono<ProviderResult<T>> mapResponse(
+    private Mono<ProviderResult<String>> mapResponse(
             HttpStatusCode statusCode,
-            Mono<T> bodyMono,
+            Mono<String> bodyMono,
             DataProviderContext baseContext,
             Instant start) {
         if (statusCode.is2xxSuccessful()) {

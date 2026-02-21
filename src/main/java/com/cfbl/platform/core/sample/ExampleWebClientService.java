@@ -46,7 +46,6 @@ public class ExampleWebClientService {
             "fetchSampleWithContext",
             SAMPLE_PATH,
             () -> sampleApi.webClient().get().uri(SAMPLE_PATH),
-            String.class,
             "Sample API GET failed",
             throwable -> false
         ).map(r -> ApiResponse.success(r.data(), r.status(), r.metadata(), r.retry()));
@@ -69,40 +68,7 @@ public class ExampleWebClientService {
             "createSampleWithContext",
             SAMPLE_PATH,
             () -> sampleApi.webClient().post().uri(SAMPLE_PATH).bodyValue(new SampleCreateRequest(customerId)),
-            String.class,
             "Sample API POST failed",
-            throwable -> false
-        ).map(r -> ApiResponse.success(r.data(), r.status(), r.metadata(), r.retry()));
-    }
-
-    /**
-     * Example GET call returning a typed DTO.
-     */
-    public Mono<ApiResponse<SampleA>> fetchSampleAsObjectA() {
-        return restCallExecutor.executeProvider(
-            sampleApi,
-            HttpMethod.GET,
-            "fetchSampleAsObjectA",
-            SAMPLE_PATH,
-            () -> sampleApi.webClient().get().uri(SAMPLE_PATH),
-            SampleA.class,
-            "Sample API GET for SampleA failed",
-            throwable -> false
-        ).map(r -> ApiResponse.success(r.data(), r.status(), r.metadata(), r.retry()));
-    }
-
-    /**
-     * Example GET call returning an alternate typed DTO.
-     */
-    public Mono<ApiResponse<SampleB>> fetchSampleAsObjectB() {
-        return restCallExecutor.executeProvider(
-            sampleApi,
-            HttpMethod.GET,
-            "fetchSampleAsObjectB",
-            SAMPLE_PATH,
-            () -> sampleApi.webClient().get().uri(SAMPLE_PATH),
-            SampleB.class,
-            "Sample API GET for SampleB failed",
             throwable -> false
         ).map(r -> ApiResponse.success(r.data(), r.status(), r.metadata(), r.retry()));
     }
@@ -114,9 +80,4 @@ public class ExampleWebClientService {
     private record SampleCreateRequest(String customerId) {
     }
 
-    public record SampleA(String id, String name) {
-    }
-
-    public record SampleB(String ref, Integer score) {
-    }
 }
