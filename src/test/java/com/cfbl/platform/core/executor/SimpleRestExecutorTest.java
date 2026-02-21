@@ -2,10 +2,10 @@ package com.cfbl.platform.core.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.ErrorCode;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -27,7 +27,7 @@ class SimpleRestExecutorTest {
                         .body("ok-response")
                         .build());
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
                 client,
                 "simple-api",
                 "https://example.com/sample",
@@ -54,7 +54,7 @@ class SimpleRestExecutorTest {
                         .body("downstream unavailable")
                         .build());
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
                 client,
                 "simple-api",
                 "https://example.com/sample",
@@ -80,7 +80,7 @@ class SimpleRestExecutorTest {
 
         WebClient client = clientFailing(original);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
                 client,
                 "simple-api",
                 "https://example.com/sample",
@@ -96,7 +96,7 @@ class SimpleRestExecutorTest {
     void shouldWrapUnexpectedException() {
         WebClient client = clientFailing(new TimeoutException("timed out"));
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
                 client,
                 "simple-api",
                 "https://example.com/sample",

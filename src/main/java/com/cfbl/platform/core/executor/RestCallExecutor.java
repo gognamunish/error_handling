@@ -1,11 +1,11 @@
 package com.cfbl.platform.core.executor;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
 import com.cfbl.platform.core.exception.core.ErrorCode;
 import com.cfbl.platform.core.exception.core.UpstreamInfo;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryPolicyExecutor;
 import com.cfbl.platform.core.retry.RetrySettings;
 import java.lang.reflect.Type;
@@ -35,9 +35,9 @@ public class RestCallExecutor extends ExecutorBase {
     }
 
     /**
-     * Executes a provider call using a supplied WebClient and maps success/error output.
+     * Executes a provider call and returns integration-layer result (no API envelope coupling).
      */
-    public <T> Mono<ApiResponse<T>> execute(
+    public <T> Mono<ProviderResult<T>> executeProvider(
             WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
@@ -45,7 +45,7 @@ public class RestCallExecutor extends ExecutorBase {
             Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
             Type responseType,
             String failureMessage) {
-        return execute(
+        return executeProvider(
                 holder,
                 httpMethod,
                 operation,
@@ -57,9 +57,9 @@ public class RestCallExecutor extends ExecutorBase {
     }
 
     /**
-     * Executes a provider call and allows caller-specific transient retry rules to be appended.
+     * Executes a provider call and returns integration-layer result (no API envelope coupling).
      */
-    public <T> Mono<ApiResponse<T>> execute(
+    public <T> Mono<ProviderResult<T>> executeProvider(
             WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
@@ -96,7 +96,7 @@ public class RestCallExecutor extends ExecutorBase {
         });
     }
 
-    private <T> Mono<ApiResponse<T>> executeAttempt(
+    private <T> Mono<ProviderResult<T>> executeAttempt(
             Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
             WebClientHolder holder,
             ParameterizedTypeReference<T> bodyType,
@@ -111,7 +111,7 @@ public class RestCallExecutor extends ExecutorBase {
                 .timeout(Duration.ofSeconds(3));
     }
 
-    private <T> Mono<ApiResponse<T>> mapResponse(
+    private <T> Mono<ProviderResult<T>> mapResponse(
             HttpStatusCode statusCode,
             Mono<T> bodyMono,
             DataProviderContext baseContext,
@@ -120,8 +120,8 @@ public class RestCallExecutor extends ExecutorBase {
             DataProviderContext context = withResponseTime(baseContext, start);
             int responseStatus = statusCode.value();
             return bodyMono
-                    .map(body -> ApiResponse.success(body, responseStatus, context))
-                    .switchIfEmpty(Mono.fromSupplier(() -> ApiResponse.success(null, responseStatus, context)));
+                    .map(body -> ProviderResult.success(responseStatus, body, context))
+                    .switchIfEmpty(Mono.fromSupplier(() -> ProviderResult.success(responseStatus, null, context)));
         }
 
         return Mono.error(new CreditSummaryDataCollectionException(

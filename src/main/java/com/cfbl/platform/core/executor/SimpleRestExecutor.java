@@ -1,11 +1,11 @@
 package com.cfbl.platform.core.executor;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
 import com.cfbl.platform.core.exception.core.ErrorCode;
 import com.cfbl.platform.core.exception.core.UpstreamInfo;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import java.lang.reflect.Type;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,23 +28,10 @@ public class SimpleRestExecutor {
     private static final String DEFAULT_OPERATION = "simpleRestCall";
     private static final String DEFAULT_FAILURE_MESSAGE = "REST call failed";
 
-    public <T> Mono<ApiResponse<T>> execute(
-            WebClient webClient,
-            String serviceId,
-            String uri,
-            Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
-            Type responseType) {
-        return execute(
-                webClient,
-                serviceId,
-                uri,
-                DEFAULT_OPERATION,
-                requestFactory,
-                responseType,
-                DEFAULT_FAILURE_MESSAGE);
-    }
-
-    public <T> Mono<ApiResponse<T>> execute(
+    /**
+     * Executes simple REST call and returns integration-layer result (no API envelope coupling).
+     */
+    public <T> Mono<ProviderResult<T>> executeProvider(
             WebClient webClient,
             String serviceId,
             String uri,
@@ -82,7 +69,26 @@ public class SimpleRestExecutor {
         });
     }
 
-    private <T> Mono<ApiResponse<T>> mapResponse(
+    /**
+     * Executes simple REST call with default operation/failure labels.
+     */
+    public <T> Mono<ProviderResult<T>> executeProvider(
+            WebClient webClient,
+            String serviceId,
+            String uri,
+            Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
+            Type responseType) {
+        return executeProvider(
+                webClient,
+                serviceId,
+                uri,
+                DEFAULT_OPERATION,
+                requestFactory,
+                responseType,
+                DEFAULT_FAILURE_MESSAGE);
+    }
+
+    private <T> Mono<ProviderResult<T>> mapResponse(
             HttpStatusCode statusCode,
             Mono<T> bodyMono,
             DataProviderContext baseContext,
@@ -91,8 +97,8 @@ public class SimpleRestExecutor {
             DataProviderContext context = withResponseTime(baseContext, start);
             int responseStatus = statusCode.value();
             return bodyMono
-                    .map(body -> ApiResponse.success(body, responseStatus, context))
-                    .switchIfEmpty(Mono.fromSupplier(() -> ApiResponse.success(null, responseStatus, context)));
+                    .map(body -> ProviderResult.success(responseStatus, body, context))
+                    .switchIfEmpty(Mono.fromSupplier(() -> ProviderResult.success(responseStatus, null, context)));
         }
 
         return Mono.error(new CreditSummaryDataCollectionException(

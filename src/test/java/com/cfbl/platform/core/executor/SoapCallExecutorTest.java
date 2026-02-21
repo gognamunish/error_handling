@@ -2,8 +2,8 @@ package com.cfbl.platform.core.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryPolicyExecutor;
 import com.cfbl.platform.core.retry.RetrySettings;
 import java.util.concurrent.TimeoutException;
@@ -21,10 +21,9 @@ class SoapCallExecutorTest {
 
     @Test
     void shouldReturnSuccessApiResponse() {
-        SoapClientHolder holder = new SoapClientHolder("soap-sample", "https://soap.example.com/service");
-
-        Mono<ApiResponse<String>> result = executor.execute(
-            holder,
+        Mono<ProviderResult<String>> result = executor.executeProvider(
+            "soap-sample",
+            "https://soap.example.com/service",
             "sayHello",
             () -> "hello-munish",
             "SOAP call failed"
@@ -47,14 +46,10 @@ class SoapCallExecutorTest {
     @Test
     void shouldRetryAndSucceedOnThirdAttempt() {
         AtomicInteger attempts = new AtomicInteger();
-        SoapClientHolder holder = new SoapClientHolder(
+
+        Mono<ProviderResult<String>> result = retryingExecutor.executeProvider(
             "soap-sample",
             "https://soap.example.com/service",
-            new RetrySettings(true, 3, 1)
-        );
-
-        Mono<ApiResponse<String>> result = retryingExecutor.execute(
-            holder,
             "sayHello",
             () -> {
                 if (attempts.incrementAndGet() < 3) {
@@ -62,7 +57,9 @@ class SoapCallExecutorTest {
                 }
                 return "hello-after-retry";
             },
-            "SOAP call failed"
+            "SOAP call failed",
+            new RetrySettings(true, 3, 1),
+            ex -> false
         );
 
         StepVerifier.create(result)
@@ -78,19 +75,16 @@ class SoapCallExecutorTest {
 
     @Test
     void shouldMapExhaustedRetryToDataCollectionException() {
-        SoapClientHolder holder = new SoapClientHolder(
+        Mono<ProviderResult<String>> result = retryingExecutor.executeProvider(
             "soap-sample",
             "https://soap.example.com/service",
-            new RetrySettings(true, 3, 1)
-        );
-
-        Mono<ApiResponse<String>> result = retryingExecutor.execute(
-            holder,
             "sayHello",
             () -> {
                 throw new RuntimeException(new TimeoutException("soap timeout"));
             },
-            "SOAP call failed"
+            "SOAP call failed",
+            new RetrySettings(true, 3, 1),
+            ex -> false
         );
 
         StepVerifier.create(result)
@@ -110,20 +104,16 @@ class SoapCallExecutorTest {
     @Test
     void shouldRetryUsingCallerProvidedPredicate() {
         AtomicInteger attempts = new AtomicInteger();
-        SoapClientHolder holder = new SoapClientHolder(
+        Mono<ProviderResult<String>> result = retryingExecutor.executeProvider(
             "soap-sample",
             "https://soap.example.com/service",
-            new RetrySettings(true, 3, 1)
-        );
-
-        Mono<ApiResponse<String>> result = retryingExecutor.execute(
-            holder,
             "sayHello",
             () -> {
                 attempts.incrementAndGet();
                 throw new IllegalStateException("custom transient");
             },
             "SOAP call failed",
+            new RetrySettings(true, 3, 1),
             ex -> ex instanceof IllegalStateException
         );
 

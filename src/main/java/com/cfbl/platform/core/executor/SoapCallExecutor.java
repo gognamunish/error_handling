@@ -1,11 +1,11 @@
 package com.cfbl.platform.core.executor;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
 import com.cfbl.platform.core.exception.core.ErrorCode;
 import com.cfbl.platform.core.exception.core.UpstreamInfo;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryPolicyExecutor;
 import com.cfbl.platform.core.retry.RetrySettings;
 import java.net.ConnectException;
@@ -14,60 +14,63 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 /**
- * Executes outbound SOAP port calls and maps results into {@link ApiResponse}.
+ * Executes outbound SOAP port calls and maps results into integration-layer {@code ProviderResult}.
+ *
+ * <p>SOAP invocation is blocking. The supplier call executes on the caller/subscriber thread
+ * (no internal scheduler offload), so thread-local request/security context is preserved.
  */
 @Component
 public class SoapCallExecutor extends ExecutorBase {
+
+    private static final RetrySettings DEFAULT_RETRY_SETTINGS = RetrySettings.defaults();
 
     public SoapCallExecutor(RetryPolicyExecutor retryExecutor) {
         super(retryExecutor);
     }
 
     /**
-     * Executes a SOAP provider call with retry support and unified response mapping.
+     * Executes a SOAP provider call and returns integration-layer result (no API envelope coupling).
      */
-    public <T> Mono<ApiResponse<T>> execute(
-            SoapClientHolder holder,
-            String operation,
-            Supplier<T> portCallSupplier,
-            String failureMessage) {
-        return execute(holder, operation, portCallSupplier, failureMessage, throwable -> false);
-    }
-
-    /**
-     * Executes a SOAP provider call and allows caller-specific transient retry rules to be appended.
-     */
-    public <T> Mono<ApiResponse<T>> execute(
-            SoapClientHolder holder,
+    public <T> Mono<ProviderResult<T>> executeProvider(
+            String serviceId,
+            String endpointUrl,
             String operation,
             Supplier<T> portCallSupplier,
             String failureMessage,
+            RetrySettings retrySettings,
             Predicate<Throwable> callerRetryablePredicate) {
         return Mono.defer(() -> {
+            Objects.requireNonNull(serviceId, "serviceId");
+            Objects.requireNonNull(endpointUrl, "endpointUrl");
+            Objects.requireNonNull(operation, "operation");
+            Objects.requireNonNull(portCallSupplier, "portCallSupplier");
+            Objects.requireNonNull(failureMessage, "failureMessage");
+            Objects.requireNonNull(retrySettings, "retrySettings");
+            Objects.requireNonNull(callerRetryablePredicate, "callerRetryablePredicate");
+
             Instant collectedAt = Instant.now();
             Instant start = collectedAt;
 
             DataProviderContext baseContext = new DataProviderContext(
                     DataProviderContext.Protocol.SOAP,
-                    holder.serviceId(),
-                    holder.endpointUrl(),
+                    serviceId,
+                    endpointUrl,
                     Map.of("operation", operation),
                     0L,
                     collectedAt);
 
-            RetrySettings retrySettings = holder.retrySettings();
             Predicate<Throwable> effectiveRetryable =
                     throwable -> isRetryableException(throwable) || callerRetryablePredicate.test(throwable);
             return executeWithRetry(
-                    "soap:" + holder.serviceId(),
+                    "soap:" + serviceId,
                     retrySettings,
                     () -> executeAttempt(portCallSupplier, baseContext, start),
                     effectiveRetryable,
@@ -75,16 +78,33 @@ public class SoapCallExecutor extends ExecutorBase {
         });
     }
 
-    private <T> Mono<ApiResponse<T>> executeAttempt(
+    /**
+     * Executes a SOAP provider call using default retry settings.
+     */
+    public <T> Mono<ProviderResult<T>> executeProvider(
+            String serviceId,
+            String endpointUrl,
+            String operation,
+            Supplier<T> portCallSupplier,
+            String failureMessage) {
+        return executeProvider(
+                serviceId,
+                endpointUrl,
+                operation,
+                portCallSupplier,
+                failureMessage,
+                DEFAULT_RETRY_SETTINGS,
+                throwable -> false);
+    }
+
+    private <T> Mono<ProviderResult<T>> executeAttempt(
             Supplier<T> portCallSupplier,
             DataProviderContext baseContext,
             Instant start) {
         DataProviderContext responseContext = withResponseTime(baseContext, start);
         return Mono.fromCallable(portCallSupplier::get)
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(body -> ApiResponse.success(body, HttpStatus.OK.value(), responseContext))
-                .switchIfEmpty(Mono.fromSupplier(
-                        () -> ApiResponse.success(null, HttpStatus.OK.value(), responseContext)))
+                .map(body -> ProviderResult.success(HttpStatus.OK.value(), body, responseContext))
+                .switchIfEmpty(Mono.fromSupplier(() -> ProviderResult.success(HttpStatus.OK.value(), null, responseContext)))
                 .timeout(Duration.ofSeconds(3));
     }
 

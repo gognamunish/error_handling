@@ -1,8 +1,8 @@
 package com.cfbl.platform.core.executor;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryInfo;
 import com.cfbl.platform.core.retry.RetryPolicyExecutor;
 import com.cfbl.platform.core.retry.RetrySettings;
@@ -29,10 +29,10 @@ abstract class ExecutorBase {
         this.retryExecutor = Objects.requireNonNull(retryExecutor, "retryExecutor");
     }
 
-    protected <T> Mono<ApiResponse<T>> executeWithRetry(
+    protected <T> Mono<ProviderResult<T>> executeWithRetry(
             String retryName,
             RetrySettings retrySettings,
-            Supplier<Mono<ApiResponse<T>>> executeAttempt,
+            Supplier<Mono<ProviderResult<T>>> executeAttempt,
             Predicate<Throwable> retryable,
             FailureMapper failureMapper) {
         AtomicInteger attempts = new AtomicInteger();
@@ -79,15 +79,12 @@ abstract class ExecutorBase {
                 exhausted);
     }
 
-    private <T> ApiResponse<T> withRetryInfo(ApiResponse<T> response, RetryInfo retryInfo) {
-        return new ApiResponse<>(
-                response.timestamp(),
-                response.traceId(),
+    private <T> ProviderResult<T> withRetryInfo(ProviderResult<T> response, RetryInfo retryInfo) {
+        return new ProviderResult<>(
                 response.status(),
                 response.data(),
                 response.metadata(),
-                retryInfo,
-                response.error());
+                retryInfo);
     }
 
     @FunctionalInterface

@@ -2,6 +2,7 @@ package com.cfbl.platform.core.exception.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryInfo;
 import java.time.Instant;
 import java.util.List;
@@ -49,6 +50,13 @@ public record ApiResponse<T>(
             retry,
             null
         );
+    }
+
+    /**
+     * Builds an API response from an integration-layer provider result.
+     */
+    public static <T> ApiResponse<T> fromProviderResult(ProviderResult<T> result) {
+        return success(result.data(), result.status(), result.metadata(), result.retry());
     }
 
     public static ApiResponse<Void> error(

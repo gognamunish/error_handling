@@ -2,10 +2,10 @@ package com.cfbl.platform.core.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cfbl.platform.core.exception.api.ApiResponse;
 import com.cfbl.platform.core.exception.core.CreditSummaryDataCollectionException;
 import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.ErrorCode;
+import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetryPolicyExecutor;
 import com.cfbl.platform.core.retry.RetrySettings;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +37,7 @@ class RestCallExecutorTest {
 
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
             holder,
             HttpMethod.GET,
             "fetchSample",
@@ -74,7 +74,7 @@ class RestCallExecutorTest {
 
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
             holder,
             HttpMethod.POST,
             "createSample",
@@ -102,7 +102,7 @@ class RestCallExecutorTest {
 
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
             holder,
             HttpMethod.GET,
             "fetchNoContent",
@@ -133,7 +133,7 @@ class RestCallExecutorTest {
 
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
             holder,
             HttpMethod.GET,
             "fetchSample",
@@ -176,7 +176,7 @@ class RestCallExecutorTest {
             new RetrySettings(true, 3, 1)
         );
 
-        Mono<ApiResponse<String>> result = retryingExecutor.execute(
+        Mono<ProviderResult<String>> result = retryingExecutor.executeProvider(
             holder,
             HttpMethod.GET,
             "fetchMissing",
@@ -205,7 +205,7 @@ class RestCallExecutorTest {
         WebClient client = clientFailing(new TimeoutException("timed out"));
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
             holder,
             HttpMethod.POST,
             "createSample",
@@ -239,7 +239,7 @@ class RestCallExecutorTest {
         WebClient client = clientFailing(original);
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = executor.execute(
+        Mono<ProviderResult<String>> result = executor.executeProvider(
             holder,
             HttpMethod.GET,
             "fetchSample",
@@ -275,7 +275,7 @@ class RestCallExecutorTest {
 
         WebClientHolder holder = new WebClientHolder("sample-api", "https://example.com", client);
 
-        Mono<ApiResponse<String>> result = retryingExecutor.execute(
+        Mono<ProviderResult<String>> result = retryingExecutor.executeProvider(
             holder,
             HttpMethod.GET,
             "retryThenSuccess",
@@ -307,7 +307,7 @@ class RestCallExecutorTest {
             new RetrySettings(true, 3, 1)
         );
 
-        Mono<ApiResponse<String>> result = retryingExecutor.execute(
+        Mono<ProviderResult<String>> result = retryingExecutor.executeProvider(
             holder,
             HttpMethod.GET,
             "customRetry",
