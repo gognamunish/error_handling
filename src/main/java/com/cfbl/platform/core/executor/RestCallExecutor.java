@@ -15,13 +15,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 import reactor.core.publisher.Mono;
 
 /**
@@ -42,7 +42,7 @@ public class RestCallExecutor extends ExecutorBase {
             HttpMethod httpMethod,
             String operation,
             String path,
-            Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
+            Supplier<RequestHeadersSpec<?>> requestFactory,
             Type responseType,
             String failureMessage) {
         return executeProvider(
@@ -64,7 +64,7 @@ public class RestCallExecutor extends ExecutorBase {
             HttpMethod httpMethod,
             String operation,
             String path,
-            Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
+            Supplier<RequestHeadersSpec<?>> requestFactory,
             Type responseType,
             String failureMessage,
             Predicate<Throwable> callerRetryablePredicate) {
@@ -90,19 +90,18 @@ public class RestCallExecutor extends ExecutorBase {
             return executeWithRetry(
                     "rest:" + holder.serviceId(),
                     retrySettings,
-                    () -> executeAttempt(requestFactory, holder, bodyType, baseContext, start),
+                    () -> executeAttempt(requestFactory, bodyType, baseContext, start),
                     effectiveRetryable,
                     ex -> toPlatformException(ex, failureMessage, baseContext, start));
         });
     }
 
     private <T> Mono<ProviderResult<T>> executeAttempt(
-            Function<WebClient, WebClient.RequestHeadersSpec<?>> requestFactory,
-            WebClientHolder holder,
+            Supplier<RequestHeadersSpec<?>> requestFactory,
             ParameterizedTypeReference<T> bodyType,
             DataProviderContext baseContext,
             Instant start) {
-        return requestFactory.apply(holder.webClient())
+        return requestFactory.get()
                 .exchangeToMono(response -> mapResponse(
                         response.statusCode(),
                         response.bodyToMono(bodyType),

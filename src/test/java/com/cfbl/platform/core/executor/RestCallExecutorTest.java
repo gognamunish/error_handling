@@ -42,7 +42,7 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "fetchSample",
             "/sample",
-            c -> c.get().uri("/sample"),
+            () -> holder.webClient().get().uri("/sample"),
             String.class,
             "GET failed"
         );
@@ -79,7 +79,7 @@ class RestCallExecutorTest {
             HttpMethod.POST,
             "createSample",
             "/sample",
-            c -> c.post().uri("/sample").bodyValue("{}"),
+            () -> holder.webClient().post().uri("/sample").bodyValue("{}"),
             String.class,
             "POST failed"
         );
@@ -107,7 +107,7 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "fetchNoContent",
             "/sample",
-            c -> c.get().uri("/sample"),
+            () -> holder.webClient().get().uri("/sample"),
             String.class,
             "GET failed"
         );
@@ -138,7 +138,7 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "fetchSample",
             "/sample",
-            c -> c.get().uri("/sample"),
+            () -> holder.webClient().get().uri("/sample"),
             String.class,
             "GET failed"
         );
@@ -181,7 +181,7 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "fetchMissing",
             "/sample",
-            c -> c.get().uri("/sample"),
+            () -> holder.webClient().get().uri("/sample"),
             String.class,
             "GET failed"
         );
@@ -210,7 +210,7 @@ class RestCallExecutorTest {
             HttpMethod.POST,
             "createSample",
             "/sample",
-            c -> c.post().uri("/sample").bodyValue("{}"),
+            () -> holder.webClient().post().uri("/sample").bodyValue("{}"),
             String.class,
             "POST failed"
         );
@@ -244,7 +244,7 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "fetchSample",
             "/sample",
-            c -> c.get().uri("/sample"),
+            () -> holder.webClient().get().uri("/sample"),
             String.class,
             "GET failed"
         );
@@ -280,7 +280,7 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "retryThenSuccess",
             "/sample",
-            c -> c.get().uri("/sample"),
+            () -> holder.webClient().get().uri("/sample"),
             String.class,
             "GET failed"
         );
@@ -312,9 +312,9 @@ class RestCallExecutorTest {
             HttpMethod.GET,
             "customRetry",
             "/sample",
-            c -> {
+            () -> {
                 attempts.incrementAndGet();
-                return c.get().uri("/sample");
+                return holder.webClient().get().uri("/sample");
             },
             String.class,
             "GET failed",

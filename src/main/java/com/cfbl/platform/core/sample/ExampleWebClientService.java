@@ -45,7 +45,7 @@ public class ExampleWebClientService {
             HttpMethod.GET,
             "fetchSampleWithContext",
             SAMPLE_PATH,
-            client -> client.get().uri(SAMPLE_PATH),
+            () -> sampleApi.webClient().get().uri(SAMPLE_PATH),
             String.class,
             "Sample API GET failed",
             throwable -> false
@@ -68,7 +68,7 @@ public class ExampleWebClientService {
             HttpMethod.POST,
             "createSampleWithContext",
             SAMPLE_PATH,
-            client -> client.post().uri(SAMPLE_PATH).bodyValue(new SampleCreateRequest(customerId)),
+            () -> sampleApi.webClient().post().uri(SAMPLE_PATH).bodyValue(new SampleCreateRequest(customerId)),
             String.class,
             "Sample API POST failed",
             throwable -> false
@@ -84,7 +84,7 @@ public class ExampleWebClientService {
             HttpMethod.GET,
             "fetchSampleAsObjectA",
             SAMPLE_PATH,
-            client -> client.get().uri(SAMPLE_PATH),
+            () -> sampleApi.webClient().get().uri(SAMPLE_PATH),
             SampleA.class,
             "Sample API GET for SampleA failed",
             throwable -> false
@@ -100,7 +100,7 @@ public class ExampleWebClientService {
             HttpMethod.GET,
             "fetchSampleAsObjectB",
             SAMPLE_PATH,
-            client -> client.get().uri(SAMPLE_PATH),
+            () -> sampleApi.webClient().get().uri(SAMPLE_PATH),
             SampleB.class,
             "Sample API GET for SampleB failed",
             throwable -> false
