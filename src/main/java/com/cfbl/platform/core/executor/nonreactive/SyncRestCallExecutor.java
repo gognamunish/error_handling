@@ -5,10 +5,10 @@ import com.cfbl.platform.core.exception.core.CreditSummaryPlatformException;
 import com.cfbl.platform.core.exception.core.DataProviderContext;
 import com.cfbl.platform.core.exception.core.ErrorCode;
 import com.cfbl.platform.core.exception.core.UpstreamInfo;
+import com.cfbl.platform.core.executor.WebClientHolder;
 import com.cfbl.platform.core.integration.model.ProviderResult;
 import com.cfbl.platform.core.retry.RetrySettings;
 import com.cfbl.platform.core.retry.SyncRetryPolicyExecutor;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,19 +20,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /**
- * Executes outbound synchronous REST calls and maps results into
- * {@link ProviderResult}.
+ * Executes outbound synchronous REST calls using WebClient.block() and maps
+ * results into {@link ProviderResult}.
  * <p>
  * This executor prevents context loss by executing Resilience4j retry blocks
  * strictly
- * on the calling thread, maintaining automatic access to ThreadLocal
- * SecurityContext variables.
+ * on the calling thread. By calling .block(), we ensure the request happens
+ * synchronously
+ * and re-evaluates all WebClient filters/headers on every retry.
  */
 @Component
 public class SyncRestCallExecutor extends SyncExecutorBase {
@@ -42,11 +42,11 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
     }
 
     public ProviderResult<String> executeProvider(
-            RestTemplateHolder holder,
+            WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
             String path,
-            Supplier<ResponseEntity<String>> requestFactory,
+            Supplier<RequestHeadersSpec<?>> requestFactory,
             String failureMessage) {
         return executeProvider(
                 holder,
@@ -59,11 +59,11 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
     }
 
     public ProviderResult<String> executeProvider(
-            RestTemplateHolder holder,
+            WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
             String path,
-            Supplier<ResponseEntity<String>> requestFactory,
+            Supplier<RequestHeadersSpec<?>> requestFactory,
             String failureMessage,
             Predicate<Throwable> callerRetryablePredicate) {
 
@@ -91,13 +91,27 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
     }
 
     private ProviderResult<String> executeAttempt(
-            Supplier<ResponseEntity<String>> requestFactory,
+            Supplier<RequestHeadersSpec<?>> requestFactory,
             DataProviderContext baseContext,
             Instant start) {
         try {
-            ResponseEntity<String> response = requestFactory.get();
+            // Re-evaluating requestFactory.get() inside the loop ensures filters re-run
+            ResponseEntity<String> response = requestFactory.get()
+                    .retrieve()
+                    .toEntity(String.class)
+                    .block(); // Blocks the caller thread
+
+            if (response == null) {
+                throw new CreditSummaryDataCollectionException(
+                        ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
+                        "Upstream returned empty response",
+                        withResponseTime(baseContext, start),
+                        new UpstreamInfo(null, "NULL_RESPONSE", elapsedMs(start)),
+                        null);
+            }
+
             return mapResponse(response.getStatusCode(), response.getBody(), baseContext, start);
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+        } catch (WebClientResponseException ex) {
             String errorBody = ex.getResponseBodyAsString();
             String truncated = errorBody.length() > 1000 ? errorBody.substring(0, 1000) + "..." : errorBody;
             String errorMessage = "Upstream returned HTTP " + ex.getStatusCode().value() +
@@ -109,14 +123,13 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
                     withResponseTime(baseContext, start),
                     new UpstreamInfo(ex.getStatusCode().value(), ex.getStatusCode().toString(), elapsedMs(start)),
                     null);
-        } catch (ResourceAccessException ex) {
-            // ResourceAccessException wraps SocketTimeoutException/ConnectException in
-            // RestTemplate
+        } catch (Exception ex) {
+            // Handles timeouts, connection errors, etc.
             throw new CreditSummaryDataCollectionException(
                     ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
-                    "Provider transport or timeout error",
+                    "Provider transport or timeout error: " + ex.getMessage(),
                     withResponseTime(baseContext, start),
-                    new UpstreamInfo(null, ex.getMessage(), elapsedMs(start)),
+                    new UpstreamInfo(null, ex.getClass().getSimpleName(), elapsedMs(start)),
                     ex);
         }
     }
@@ -131,10 +144,6 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
             return ProviderResult.success(statusCode.value(), body, context);
         }
 
-        // Technically dead code if RestTemplate uses default
-        // DefaultResponseErrorHandler
-        // However some consumers disable the error handler to consume 4xx/5xx responses
-        // normally.
         throw new CreditSummaryDataCollectionException(
                 ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
                 "Upstream returned HTTP " + statusCode.value() + " Response: " + (body != null ? body : ""),
@@ -144,17 +153,22 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
     }
 
     private boolean isRetryableException(Throwable throwable) {
-        if (throwable instanceof ResourceAccessException || throwable instanceof TimeoutException) {
+        // Handle common timeout/connection issues
+        if (throwable instanceof TimeoutException || throwable.getCause() instanceof TimeoutException) {
             return true;
+        }
+
+        if (throwable instanceof WebClientResponseException ex) {
+            HttpStatusCode status = ex.getStatusCode();
+            return status.equals(HttpStatus.TOO_MANY_REQUESTS)
+                    || status.equals(HttpStatus.BAD_GATEWAY)
+                    || status.equals(HttpStatus.SERVICE_UNAVAILABLE)
+                    || status.equals(HttpStatus.GATEWAY_TIMEOUT);
         }
 
         if (throwable instanceof CreditSummaryDataCollectionException ex) {
             UpstreamInfo upstream = ex.getUpstream();
             if (upstream == null || upstream.httpStatus() == null) {
-                // Determine if it was caused by inner timeout
-                if (ex.getCause() instanceof ResourceAccessException) {
-                    return true;
-                }
                 return false;
             }
 
