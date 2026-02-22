@@ -33,7 +33,8 @@ public class RestCallExecutor extends ExecutorBase {
     }
 
     /**
-     * Executes a provider call and returns integration-layer result (no API envelope coupling).
+     * Executes a provider call and returns integration-layer result (no API
+     * envelope coupling).
      */
     public Mono<ProviderResult<String>> executeProvider(
             WebClientHolder holder,
@@ -53,7 +54,8 @@ public class RestCallExecutor extends ExecutorBase {
     }
 
     /**
-     * Executes a provider call and returns integration-layer result (no API envelope coupling).
+     * Executes a provider call and returns integration-layer result (no API
+     * envelope coupling).
      */
     public Mono<ProviderResult<String>> executeProvider(
             WebClientHolder holder,
@@ -63,6 +65,10 @@ public class RestCallExecutor extends ExecutorBase {
             Supplier<RequestHeadersSpec<?>> requestFactory,
             String failureMessage,
             Predicate<Throwable> callerRetryablePredicate) {
+
+        org.springframework.security.core.context.SecurityContext threadLocalSecurityContext = org.springframework.security.core.context.SecurityContextHolder
+                .getContext();
+
         return Mono.defer(() -> {
             Instant collectedAt = Instant.now();
             Instant start = collectedAt;
@@ -76,15 +82,22 @@ public class RestCallExecutor extends ExecutorBase {
                     collectedAt);
 
             RetrySettings retrySettings = holder.retrySettings();
-            Predicate<Throwable> effectiveRetryable =
-                    throwable -> isRetryableException(throwable) || callerRetryablePredicate.test(throwable);
+            Predicate<Throwable> effectiveRetryable = throwable -> isRetryableException(throwable)
+                    || callerRetryablePredicate.test(throwable);
             return executeWithRetry(
                     "rest:" + holder.serviceId(),
                     retrySettings,
                     () -> executeAttempt(requestFactory, baseContext, start),
                     effectiveRetryable,
                     ex -> toPlatformException(ex, failureMessage, baseContext, start));
-        });
+        })
+                .contextWrite(ctx -> {
+                    if (threadLocalSecurityContext != null && threadLocalSecurityContext.getAuthentication() != null) {
+                        return org.springframework.security.core.context.ReactiveSecurityContextHolder
+                                .withSecurityContext(Mono.just(threadLocalSecurityContext)).apply(ctx);
+                    }
+                    return ctx;
+                });
     }
 
     private Mono<ProviderResult<String>> executeAttempt(
@@ -113,34 +126,50 @@ public class RestCallExecutor extends ExecutorBase {
                     .switchIfEmpty(Mono.fromSupplier(() -> ProviderResult.success(responseStatus, null, context)));
         }
 
-        return Mono.error(new CreditSummaryDataCollectionException(
-                ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
-                "Upstream returned HTTP " + statusCode.value(),
-                withResponseTime(baseContext, start),
-                new UpstreamInfo(statusCode.value(), statusCode.toString(), elapsedMs(start)),
-                null));
+        return bodyMono
+                .timeout(Duration.ofMillis(500))
+                .onErrorResume(e -> Mono.just("<unreadable or timeout>"))
+                .defaultIfEmpty("")
+                .flatMap(errorBody -> {
+                    String errorMessage = "Upstream returned HTTP " + statusCode.value();
+                    if (!errorBody.isEmpty()) {
+                        String truncated = errorBody.length() > 1000 ? errorBody.substring(0, 1000) + "..." : errorBody;
+                        errorMessage += " Response: " + truncated;
+                    }
+
+                    return Mono.error(new CreditSummaryDataCollectionException(
+                            ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
+                            errorMessage,
+                            withResponseTime(baseContext, start),
+                            new UpstreamInfo(statusCode.value(), statusCode.toString(), elapsedMs(start)),
+                            null));
+                });
     }
 
     /**
      * Determines whether a REST failure is transient and therefore safe to retry.
      *
-     * <p>Retryable conditions:
+     * <p>
+     * Retryable conditions:
      * <ul>
-     *   <li>{@link TimeoutException}: transient timeout while waiting for upstream response</li>
-     *   <li>{@code CreditSummaryDataCollectionException} with upstream HTTP status:
-     *     <ul>
-     *       <li>{@code 429 Too Many Requests}</li>
-     *       <li>{@code 502 Bad Gateway}</li>
-     *       <li>{@code 503 Service Unavailable}</li>
-     *       <li>{@code 504 Gateway Timeout}</li>
-     *     </ul>
-     *   </li>
+     * <li>{@link TimeoutException}: transient timeout while waiting for upstream
+     * response</li>
+     * <li>{@code CreditSummaryDataCollectionException} with upstream HTTP status:
+     * <ul>
+     * <li>{@code 429 Too Many Requests}</li>
+     * <li>{@code 502 Bad Gateway}</li>
+     * <li>{@code 503 Service Unavailable}</li>
+     * <li>{@code 504 Gateway Timeout}</li>
+     * </ul>
+     * </li>
      * </ul>
      *
-     * <p>Non-retryable conditions:
+     * <p>
+     * Non-retryable conditions:
      * <ul>
-     *   <li>other {@code 4xx} statuses (for example {@code 400}, {@code 401}, {@code 403}, {@code 404})</li>
-     *   <li>business/presentation exceptions and unknown non-transient failures</li>
+     * <li>other {@code 4xx} statuses (for example {@code 400}, {@code 401},
+     * {@code 403}, {@code 404})</li>
+     * <li>business/presentation exceptions and unknown non-transient failures</li>
      * </ul>
      */
     private boolean isRetryableException(Throwable throwable) {
