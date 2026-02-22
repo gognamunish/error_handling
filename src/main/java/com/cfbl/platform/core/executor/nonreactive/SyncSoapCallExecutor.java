@@ -37,6 +37,26 @@ public class SyncSoapCallExecutor extends SyncExecutorBase {
         super(retryExecutor);
     }
 
+    /**
+     * Executes a synchronous SOAP provider call with full retry and failure
+     * handling.
+     *
+     * @param serviceId                Logical service identifier for the upstream
+     *                                 provider
+     * @param endpointUrl              Physical URL of the SOAP service
+     * @param operation                Name of the SOAP operation being called
+     * @param portCallSupplier         Lambda or method reference executing the
+     *                                 actual JAX-WS port call
+     * @param failureMessage           Error message prefix if the call fails after
+     *                                 retries
+     * @param retrySettings            Configuration for retry behavior
+     * @param callerRetryablePredicate Additional logic to determine if an error is
+     *                                 transient
+     * @param <T>                      Type of the expected response object
+     * @return result containing the successful response payload and context
+     * @throws CreditSummaryPlatformException if the call fails after exhausting
+     *                                        retries
+     */
     public <T> ProviderResult<T> executeProvider(
             String serviceId,
             String endpointUrl,
@@ -76,6 +96,17 @@ public class SyncSoapCallExecutor extends SyncExecutorBase {
                 ex -> toPlatformException(ex, failureMessage, baseContext, start));
     }
 
+    /**
+     * Executes a synchronous SOAP provider call using default retry settings.
+     *
+     * @param serviceId        Logical service identifier
+     * @param endpointUrl      Physical URL
+     * @param operation        SOAP operation name
+     * @param portCallSupplier Lambda executing the call
+     * @param failureMessage   Failure message prefix
+     * @param <T>              Response type
+     * @return result payload and context
+     */
     public <T> ProviderResult<T> executeProvider(
             String serviceId,
             String endpointUrl,

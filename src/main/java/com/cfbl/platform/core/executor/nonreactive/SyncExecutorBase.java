@@ -25,6 +25,23 @@ abstract class SyncExecutorBase {
         this.retryExecutor = Objects.requireNonNull(retryExecutor, "retryExecutor");
     }
 
+    /**
+     * Internal template method that orchestrates the retry loop for synchronous
+     * execution.
+     * Takes care of incrementing attempt counts and attaching final retry metadata
+     * to either the success result or the failure exception.
+     *
+     * @param retryName      Unique name for the retry instance (e.g.
+     *                       "rest:service-id")
+     * @param retrySettings  Configuration for max attempts and wait duration
+     * @param executeAttempt Supplier that executes a single isolated attempt
+     * @param retryable      Predicate to determine if an exception triggers a retry
+     * @param failureMapper  Function to map raw technical exceptions into platform
+     *                       exceptions
+     * @param <T>            Response payload type
+     * @return enriched provider result including retry metadata
+     * @throws CreditSummaryPlatformException if call fails or exhausts retries
+     */
     protected <T> ProviderResult<T> executeWithRetry(
             String retryName,
             RetrySettings retrySettings,

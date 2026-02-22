@@ -59,7 +59,18 @@ public class SyncRetryPolicyExecutor {
     }
 
     /**
-     * Executes the supplied blocking call with service-specific retry settings.
+     * Executes a supplier synchronously within a Resilience4j retry context.
+     * This method blocks the caller thread for the duration of all attempts and
+     * wait intervals.
+     *
+     * @param retryName      Name of the retry configuration to use or create
+     * @param settings       Configuration for retries (max attempts, wait time)
+     * @param supplier       The operation to execute and potentially retry
+     * @param retryPredicate Predicate to determine if an exception should
+     *                       trigger a retry
+     * @param <T>            Response type
+     * @return result from the successful execution
+     * @throws RuntimeException the last encountered exception if all retries fail
      */
     public <T> T executeSync(
             String retryName,

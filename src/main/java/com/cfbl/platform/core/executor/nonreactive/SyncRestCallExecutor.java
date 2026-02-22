@@ -40,6 +40,21 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
         super(retryExecutor);
     }
 
+    /**
+     * Executes a synchronous provider call using the provided request factory.
+     * Default retry behavior is applied from the holder settings.
+     *
+     * @param holder         Contains service metadata and WebClient instance
+     * @param httpMethod     HTTP method for metrics/logging
+     * @param operation      Logical operation name for metrics/logging
+     * @param path           Specific URL path for metrics/logging
+     * @param requestFactory Supplier that builds the WebClient request
+     *                       specification
+     * @param failureMessage Human-readable message to include if the call fails
+     * @return result containing the successful response body and context
+     * @throws CreditSummaryPlatformException if the call fails after retries
+     *                                        (captures timing and retry info)
+     */
     public ProviderResult<String> executeProvider(
             WebClientHolder holder,
             HttpMethod httpMethod,
@@ -57,6 +72,24 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
                 throwable -> false);
     }
 
+    /**
+     * Executes a synchronous provider call with an additional caller-defined retry
+     * predicate.
+     *
+     * @param holder                   Contains service metadata and WebClient
+     *                                 instance
+     * @param httpMethod               HTTP method for metrics/logging
+     * @param operation                Logical operation name for metrics/logging
+     * @param path                     Specific URL path for metrics/logging
+     * @param requestFactory           Supplier that builds the WebClient request
+     *                                 specification
+     * @param failureMessage           Human-readable message to include if the call
+     *                                 fails
+     * @param callerRetryablePredicate Custom logic to determine if an error should
+     *                                 trigger a retry
+     * @return result containing the successful response body and context
+     * @throws CreditSummaryPlatformException if the call fails after retries
+     */
     public ProviderResult<String> executeProvider(
             WebClientHolder holder,
             HttpMethod httpMethod,
