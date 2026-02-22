@@ -96,8 +96,8 @@ public class SyncSoapCallExecutor extends SyncExecutorBase {
             Supplier<T> portCallSupplier,
             DataProviderContext baseContext,
             Instant start) {
-        DataProviderContext responseContext = withResponseTime(baseContext, start);
-        T body = portCallSupplier.get();
+        T body = portCallSupplier.get(); // Call first
+        DataProviderContext responseContext = withResponseTime(baseContext, start); // Then calculate time
         return ProviderResult.success(HttpStatus.OK.value(), body, responseContext);
     }
 

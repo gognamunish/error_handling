@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -167,6 +166,11 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
         }
 
         if (throwable instanceof CreditSummaryDataCollectionException ex) {
+            // CHECK THE CAUSE FIRST for timeouts wrapped in this exception
+            if (ex.getCause() instanceof TimeoutException || ex.getCause().getCause() instanceof TimeoutException) {
+                return true;
+            }
+
             UpstreamInfo upstream = ex.getUpstream();
             if (upstream == null || upstream.httpStatus() == null) {
                 return false;
