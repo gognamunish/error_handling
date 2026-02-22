@@ -156,13 +156,17 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
                     new UpstreamInfo(ex.getStatusCode().value(), ex.getStatusCode().toString(), elapsedMs(start)),
                     null);
         } catch (Exception ex) {
-            // Handles timeouts, connection errors, etc.
+            // Unwrap ReactiveException from WebClient.block()
+            Throwable actual = (ex.getClass().getName().contains("ReactiveException") && ex.getCause() != null)
+                    ? ex.getCause()
+                    : ex;
+
             throw new CreditSummaryDataCollectionException(
                     ErrorCode.LAYER_DATA_COLLECTION_FAILURE,
-                    "Provider transport or timeout error: " + ex.getMessage(),
+                    "Provider transport or timeout error: " + actual.getMessage(),
                     withResponseTime(baseContext, start),
-                    new UpstreamInfo(null, ex.getClass().getSimpleName(), elapsedMs(start)),
-                    ex);
+                    new UpstreamInfo(null, actual.getClass().getSimpleName(), elapsedMs(start)),
+                    actual);
         }
     }
 
@@ -190,6 +194,11 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
             return true;
         }
 
+        // WebFlux .block() wraps exceptions in ReactiveException
+        if (throwable.getClass().getName().contains("ReactiveException") && throwable.getCause() != null) {
+            return isRetryableException(throwable.getCause());
+        }
+
         if (throwable instanceof WebClientResponseException ex) {
             HttpStatusCode status = ex.getStatusCode();
             return status.equals(HttpStatus.TOO_MANY_REQUESTS)
@@ -199,8 +208,9 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
         }
 
         if (throwable instanceof CreditSummaryDataCollectionException ex) {
-            // CHECK THE CAUSE FIRST for timeouts wrapped in this exception
-            if (ex.getCause() instanceof TimeoutException || ex.getCause().getCause() instanceof TimeoutException) {
+            // Safe cause check
+            Throwable cause = ex.getCause();
+            if (cause instanceof TimeoutException || (cause != null && cause.getCause() instanceof TimeoutException)) {
                 return true;
             }
 
