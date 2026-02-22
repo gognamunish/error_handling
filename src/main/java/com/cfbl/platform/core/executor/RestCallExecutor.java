@@ -93,8 +93,8 @@ public class RestCallExecutor extends ExecutorBase {
         })
                 .contextWrite(ctx -> {
                     if (threadLocalSecurityContext != null && threadLocalSecurityContext.getAuthentication() != null) {
-                        return org.springframework.security.core.context.ReactiveSecurityContextHolder
-                                .withSecurityContext(Mono.just(threadLocalSecurityContext)).apply(ctx);
+                        return ctx.put(org.springframework.security.core.context.SecurityContext.class,
+                                Mono.just(threadLocalSecurityContext));
                     }
                     return ctx;
                 });
