@@ -57,7 +57,7 @@ public class SyncSoapCallExecutor extends SyncExecutorBase {
      * @throws CreditSummaryPlatformException if the call fails after exhausting
      *                                        retries
      */
-    public <T> ProviderResult<T> executeProvider(
+    public <T> ProviderResult<T> executeWithRetry(
             String serviceId,
             String endpointUrl,
             String operation,
@@ -107,13 +107,13 @@ public class SyncSoapCallExecutor extends SyncExecutorBase {
      * @param <T>              Response type
      * @return result payload and context
      */
-    public <T> ProviderResult<T> executeProvider(
+    public <T> ProviderResult<T> executeWithRetry(
             String serviceId,
             String endpointUrl,
             String operation,
             Supplier<T> portCallSupplier,
             String failureMessage) {
-        return executeProvider(
+        return executeWithRetry(
                 serviceId,
                 endpointUrl,
                 operation,

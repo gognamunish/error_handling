@@ -55,14 +55,14 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
      * @throws CreditSummaryPlatformException if the call fails after retries
      *                                        (captures timing and retry info)
      */
-    public ProviderResult<String> executeProvider(
+    public ProviderResult<String> executeWithRetry(
             WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
             String path,
             Supplier<RequestHeadersSpec<?>> requestFactory,
             String failureMessage) {
-        return executeProvider(
+        return executeWithRetry(
                 holder,
                 httpMethod,
                 operation,
@@ -90,7 +90,7 @@ public class SyncRestCallExecutor extends SyncExecutorBase {
      * @return result containing the successful response body and context
      * @throws CreditSummaryPlatformException if the call fails after retries
      */
-    public ProviderResult<String> executeProvider(
+    public ProviderResult<String> executeWithRetry(
             WebClientHolder holder,
             HttpMethod httpMethod,
             String operation,
